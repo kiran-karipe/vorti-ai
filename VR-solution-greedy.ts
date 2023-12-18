@@ -5,6 +5,7 @@ const filename = process.argv[2]; // pass input file as argument
 let a1: string = '', b1: string = '', a2: string = '0', b2: string = '0'; // global coordinates to track where to start from for new drivers
 let loadNumber = -1; // load number to push driver list
 const visitedMap = new Map(); // Hashmap to know which route is already visited
+const visitedTimes = new Map();
 
 
 // this is greedy solution, always looking for the closest pickup first and closest from the previous dropoff,
@@ -28,20 +29,25 @@ const vehicleRoutingGreedy = () => {
     let driverTime: number = 0;
 
     // each driver takes loads until he reaches the time limit by going the closest pickup from his previous dropoff
-    while(driverTime < MAX_TIME) {
+    while(driverTime < MAX_TIME && count < coordinates.length - 2) {
       const closestFromPrevious = getClosestPickUpFromPrevious(a2, b2, coordinates);
-      driverTime += closestFromPrevious;
-      driverLoad.push(loadNumber);
-      visitedMap.set((a1+b1+a2+b2), true); // once each coordinate set is completed, set visited true to avoid visiting it again
-      count++;
+      if ((driverTime + closestFromPrevious) < MAX_TIME) {
+        driverTime += closestFromPrevious;
+        driverLoad.push(loadNumber);
+        visitedMap.set((a1+b1+a2+b2), true); // once each coordinate set is completed, set visited true to avoid visiting it again
+        visitedTimes.set(loadNumber, driverTime);
+        count++;
+      } else {
+        break;
+      }
     }
     a1 = b1 = '', a2 = b2 = '0';
     driversLoad.push(driverLoad); // finally push all the drivers with all the loads they have finished
   }
 
-  for (let i = 0; i < driversLoad.length; i++) {
-    console.log(driversLoad[i]);
-  }
+  driversLoad.forEach((driverLoad: number[]) => {
+    console.log(`[${driverLoad.join(',')}]`);
+  })
 }
 
 // this method is to calculate the total distance from start point to dropoff and back to start position
@@ -55,8 +61,8 @@ const getClosestPickUpFromPrevious = (a: string, b: string, coordinates: string[
     }
   }
   const dropOffFromClosest = euclideanDistance(parseFloat(a1), parseFloat(b1), parseFloat(a2), parseFloat(b2));
-  const dropOffToHome = euclideanDistance(parseFloat(a2), parseFloat(b2), parseFloat('0'), parseFloat('0'));
-  return closestPickup + dropOffFromClosest + dropOffToHome; // start to closest pickup + pickup to dropoff + dropOff to home
+  const backToHome = euclideanDistance(parseFloat(a2), parseFloat(b2), parseFloat('0'), parseFloat('0'));
+  return closestPickup + dropOffFromClosest + backToHome; // start to closest pickup + pickup to dropoff + dropOff to home
 }
 
 // get the closest pickup location
